@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:todo_app/services/database_service.dart';
 
 import '../models/task.dart';
@@ -15,6 +16,7 @@ class _HomeState extends State<Home> {
   String? _task;
 
   final todosList = null;
+  DateTime today = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +83,20 @@ class _HomeState extends State<Home> {
         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
         child: Column(
           children: [
+            TableCalendar(
+              locale: "pt_PT",
+              headerStyle: HeaderStyle(titleCentered: true),
+              focusedDay: today,
+              firstDay: DateTime.utc(2000, 01, 01),
+              lastDay: DateTime.utc(2999, 01, 01),
+              availableGestures: AvailableGestures.all,
+              selectedDayPredicate: (day) => isSameDay(today, day),
+              onDaySelected: (selectedDay, focusedDay) => {
+                setState(() {
+                  today = selectedDay;
+                })
+              },
+            ),
             Text(
               "All Tasks",
               style: TextStyle(
@@ -102,6 +118,11 @@ class _HomeState extends State<Home> {
                         },
                         title: Text(
                           task.content,
+                          style: TextStyle(
+                            decoration: task.status == 1
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
                         ),
                         trailing: Checkbox(
                           value: task.status == 1,
@@ -173,14 +194,14 @@ class _HomeState extends State<Home> {
     return AppBar(
       backgroundColor: Colors.grey.shade400,
       elevation: 0,
-      title: Row(
-        children: [
-          Icon(
-            Icons.menu,
-            color: Colors.black45,
-            size: 38,
-          ),
-        ],
+      centerTitle: true,
+      leading: Icon(
+        Icons.menu,
+        color: Colors.black45,
+        size: 38,
+      ),
+      title: Text(
+        "TodoApp",
       ),
     );
   }
