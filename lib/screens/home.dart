@@ -16,9 +16,10 @@ class _HomeState extends State<Home> {
   String? _task;
 
   final todosList = null;
-  DateTime _selectedDay = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
+  CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime today = DateTime.now();
-  late String taskDateText = "${_selectedDay.day}-${_selectedDay.month}";
+  late String taskDateText = "${_focusedDay.day}-${_focusedDay.month}";
 
   String getDateText(DateTime date,
       {bool day = false, bool month = false, bool year = false}) {
@@ -104,20 +105,34 @@ class _HomeState extends State<Home> {
           children: [
             TableCalendar(
               locale: "pt_PT",
-              headerStyle: HeaderStyle(titleCentered: true),
-              focusedDay: _selectedDay,
+              headerStyle: HeaderStyle(
+                titleCentered: true,
+                formatButtonVisible: false,
+              ),
+              focusedDay: _focusedDay,
               firstDay: DateTime.utc(2000, 01, 01),
               lastDay: DateTime.utc(2999, 01, 01),
               availableGestures: AvailableGestures.all,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              selectedDayPredicate: (day) => isSameDay(_focusedDay, day),
+              onPageChanged: (focusedDay) {
+                setState(() {
+                  if (!isSameDay(focusedDay, _focusedDay)) {
+                    _calendarFormat = CalendarFormat.month;
+                  }
+                  _focusedDay = focusedDay;
+                });
+              },
               onDaySelected: (selectedDay, focusedDay) => {
                 setState(() {
-                  _selectedDay = selectedDay;
+                  _focusedDay = selectedDay;
                   taskDateText =
                       getDateText(selectedDay, day: true, month: true);
+                  _calendarFormat = CalendarFormat.week;
                 })
               },
+              calendarFormat: _calendarFormat,
               rowHeight: 40,
+              currentDay: DateTime.now(),
             ),
             Text(
               taskDateText,
