@@ -16,7 +16,26 @@ class _HomeState extends State<Home> {
   String? _task;
 
   final todosList = null;
+  DateTime _selectedDay = DateTime.now();
   DateTime today = DateTime.now();
+  late String taskDateText = "${_selectedDay.day}-${_selectedDay.month}";
+
+  String getDateText(DateTime date,
+      {bool day = false, bool month = false, bool year = false}) {
+    String dateString = date.toString().split(" ")[0];
+    List<String> dateStringSplit = dateString.split("-");
+    String dayString = dateStringSplit[2];
+    String monthString = dateStringSplit[1];
+    String yearString = dateStringSplit[0];
+    String res = "";
+    if (day) res = dayString;
+    if (month) res = "$res-$monthString";
+    if (year) res = "$res-$yearString";
+    if (res.isEmpty || date.year != today.year) {
+      return "$dayString-$monthString-$yearString";
+    }
+    return res;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,19 +105,22 @@ class _HomeState extends State<Home> {
             TableCalendar(
               locale: "pt_PT",
               headerStyle: HeaderStyle(titleCentered: true),
-              focusedDay: today,
+              focusedDay: _selectedDay,
               firstDay: DateTime.utc(2000, 01, 01),
               lastDay: DateTime.utc(2999, 01, 01),
               availableGestures: AvailableGestures.all,
-              selectedDayPredicate: (day) => isSameDay(today, day),
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
               onDaySelected: (selectedDay, focusedDay) => {
                 setState(() {
-                  today = selectedDay;
+                  _selectedDay = selectedDay;
+                  taskDateText =
+                      getDateText(selectedDay, day: true, month: true);
                 })
               },
+              rowHeight: 40,
             ),
             Text(
-              "All Tasks",
+              taskDateText,
               style: TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.w900,
