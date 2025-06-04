@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:todo_app/models/task.dart';
+import 'package:todo_app/models/repetition.dart';
 
 class DatabaseService {
   static Database? _db;
@@ -10,6 +11,14 @@ class DatabaseService {
   final String _tasksIdColumnName = 'id';
   final String _tasksContentColumnName = 'content';
   final String _tasksStatusColumnName = 'status';
+  final String _tasksInitialDateColumnName = 'initialDate';
+  final String _tasksInitialTimeColumnName = 'initialTime';
+  final String _tasksDurationColumnName = 'duration';
+  final String _tasksRepetitionIdColumnName = 'repetitionId';
+
+  final String _repetitionTableName = 'repetition';
+  final String _repetitionIdColumnName = 'id';
+  final String _repetitionNameColumnName = 'name';
 
   DatabaseService._constructor();
 
@@ -27,24 +36,84 @@ class DatabaseService {
       version: 1,
       onCreate: (db, version) {
         db.execute('''
+        CREATE TABLE $_repetitionTableName (
+          $_repetitionIdColumnName INTEGER PRIMARY KEY,
+          $_repetitionNameColumnName TEXT UNIQUE NOT NULL
+        )
+        ''');
+
+        db.execute('''
         CREATE TABLE $_tasksTableName (
           $_tasksIdColumnName INTEGER PRIMARY KEY,
-          $_tasksContentColumnName STRING NOT NULL,
-          $_tasksStatusColumnName INTEGER NOT NULL
+          $_tasksContentColumnName TEXT NOT NULL,
+          $_tasksStatusColumnName INTEGER NOT NULL,
+          $_tasksInitialDateColumnName TEXT NOT NULL,
+          $_tasksInitialTimeColumnName TEXT NOT NULL,
+          $_tasksDurationColumnName TEXT NOT NULL,
+          $_tasksRepetitionIdColumnName INT NOT NULL,
+          FOREIGN KEY($_tasksRepetitionIdColumnName) REFERENCES $_repetitionTableName($_repetitionIdColumnName) ON DELETE CASCADE
         )
         ''');
       },
     );
+    initRepetitionTable();
     return database;
   }
 
-  void addTask(String content) async {
+  void initRepetitionTable() async {
+    final db = await database;
+    for (var repetition in Repetition.listRepetitions) {
+      await db.insert(
+        _repetitionTableName,
+        {
+          _repetitionNameColumnName: repetition,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+  }
+
+  Future<List<Repetition>> getRepetitions() async {
+    final db = await database;
+    final data = await db.query(_repetitionTableName);
+    return data
+        .map(
+          (e) => Repetition(
+            id: e['id'] as int,
+            name: e['name'] as String,
+          ),
+        )
+        .toList();
+  }
+
+  Future<Repetition> getRepetitionById(int id) async {
+    final db = await database;
+    final data = await db.query(
+      _repetitionTableName,
+      where: "id =?",
+      whereArgs: [id],
+    );
+    return data
+        .map(
+          (e) => Repetition(
+            id: e['id'] as int,
+            name: e['name'] as String,
+          ),
+        )
+        .toList()[0];
+  }
+
+  void addTask(String content, String initialDate) async {
     final db = await database;
     await db.insert(
       _tasksTableName,
       {
         _tasksContentColumnName: content,
         _tasksStatusColumnName: 0,
+        _tasksInitialDateColumnName: initialDate,
+        _tasksInitialTimeColumnName: "",
+        _tasksDurationColumnName: "",
+        _tasksRepetitionIdColumnName: "",
       },
     );
   }
@@ -58,6 +127,10 @@ class DatabaseService {
             id: e['id'] as int,
             content: e['content'] as String,
             status: e['status'] as int,
+            initialDate: e['initialDate'] as String,
+            duration: e['duration'] as String,
+            initialTime: e['initialTime'] as String,
+            repetitionId: e['repetitionId'] as int,
           ),
         )
         .toList();
