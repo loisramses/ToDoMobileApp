@@ -103,7 +103,7 @@ class DatabaseService {
         .toList()[0];
   }
 
-  void addTask(String content, String initialDate) async {
+  void addTask(String content, String initialDate, int repetitionId) async {
     final db = await database;
     await db.insert(
       _tasksTableName,
@@ -113,7 +113,7 @@ class DatabaseService {
         _tasksInitialDateColumnName: initialDate,
         _tasksInitialTimeColumnName: "",
         _tasksDurationColumnName: "",
-        _tasksRepetitionIdColumnName: "",
+        _tasksRepetitionIdColumnName: repetitionId,
       },
     );
   }
@@ -121,6 +121,28 @@ class DatabaseService {
   Future<List<Task>> getTasks() async {
     final db = await database;
     final data = await db.query(_tasksTableName);
+    return data
+        .map(
+          (e) => Task(
+            id: e['id'] as int,
+            content: e['content'] as String,
+            status: e['status'] as int,
+            initialDate: e['initialDate'] as String,
+            duration: e['duration'] as String,
+            initialTime: e['initialTime'] as String,
+            repetitionId: e['repetitionId'] as int,
+          ),
+        )
+        .toList();
+  }
+
+  Future<List<Task>> getTasksByDate(String date) async {
+    final db = await database;
+    final data = await db.query(
+      _tasksTableName,
+      where: 'initialDate = ?',
+      whereArgs: [date],
+    );
     return data
         .map(
           (e) => Task(

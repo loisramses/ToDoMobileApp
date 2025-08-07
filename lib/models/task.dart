@@ -11,4 +11,9 @@ class Task {
     required this.duration,
     required this.repetitionId,
   });
+
+  @override
+  String toString() {
+    return "Task(id: $id, content: $content, status: $status, initialDate: $initialDate, initialTime: $initialTime, duration: $duration, repetitionId: $repetitionId)";
+  }
 }

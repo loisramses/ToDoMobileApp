@@ -102,7 +102,8 @@ class _HomeState extends State<Home> {
             ),
             Expanded(
               child: FutureBuilder(
-                future: _databaseService.getTasks(),
+                future:
+                    _databaseService.getTasksByDate(getDateText(_focusedDay)),
                 builder: (context, snapshot) {
                   return ListView.builder(
                     itemCount: snapshot.data?.length ?? 0,
@@ -146,10 +147,11 @@ class _HomeState extends State<Home> {
     return showDialog(
       context: context,
       builder: (_) {
-        DateTime _selectedInitialDay = _focusedDay;
-        TimeOfDay _selectedTimeOfDay = TimeOfDay.now();
-        bool _allDay = true;
-        VoidCallback? _chooseDayButton;
+        DateTime selectedInitialDay = _focusedDay;
+        TimeOfDay selectedTimeOfDay = TimeOfDay.now();
+        Repetition? selectedRepetition;
+        bool allDay = true;
+        VoidCallback? chooseDayButton;
 
         return StatefulBuilder(builder: (context, setStateDialog) {
           return AlertDialog(
@@ -160,7 +162,7 @@ class _HomeState extends State<Home> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
-                    onChanged: (value) {
+                    onSubmitted: (value) {
                       setStateDialog(() {
                         _task = value;
                       });
@@ -183,11 +185,11 @@ class _HomeState extends State<Home> {
                         initialDate: _focusedDay,
                       );
                       setStateDialog(() {
-                        _selectedInitialDay = pickedDate ?? _focusedDay;
+                        selectedInitialDay = pickedDate ?? _focusedDay;
                       });
                     },
                     child: Text(
-                      getDateText(_selectedInitialDay),
+                      getDateText(selectedInitialDay),
                     ),
                   ),
                   Text("Repetition"),
@@ -195,51 +197,73 @@ class _HomeState extends State<Home> {
                     children: [
                       Text("All day"),
                       Checkbox(
-                        value: _allDay,
+                        value: allDay,
                         onChanged: (value) {
                           setStateDialog(() {
-                            _allDay = value!;
-                            if (!_allDay) {
-                              _chooseDayButton = () async {
+                            allDay = value!;
+                            if (!allDay) {
+                              chooseDayButton = () async {
                                 TimeOfDay? pickedTimeOfDay =
                                     await showTimePicker(
                                   context: context,
-                                  initialTime: _selectedTimeOfDay,
+                                  initialTime: selectedTimeOfDay,
                                 );
-                                _selectedTimeOfDay =
+                                selectedTimeOfDay =
                                     pickedTimeOfDay ?? TimeOfDay.now();
                               };
                             } else {
-                              _chooseDayButton = null;
+                              chooseDayButton = null;
                             }
                           });
                         },
                       ),
                       OutlinedButton(
-                        onPressed: _chooseDayButton,
+                        onPressed: chooseDayButton,
                         child: Text(
-                          _selectedTimeOfDay.format(context),
+                          selectedTimeOfDay.format(context),
                         ),
                       ),
                     ],
                   ),
-                  FutureBuilder(
+                  FutureBuilder<List<Repetition>>(
                     future: _databaseService.getRepetitions(),
                     builder: (context, snapshot) {
-                      return ConstrainedBox(
-                        constraints: BoxConstraints(maxHeight: 30),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: snapshot.data?.length ?? 0,
-                          itemBuilder: (context, index) {
-                            Repetition repetition = snapshot.data![index];
-                            return ListTile(
-                              title: Text(
-                                repetition.name,
-                              ),
-                              onTap: () {},
-                            );
-                          },
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      } else if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      } else if (!snapshot.hasData || snapshot.data == null) {
+                        return Text('No data');
+                      }
+
+                      selectedRepetition =
+                          selectedRepetition ?? snapshot.data!.first;
+
+                      return Container(
+                        width: double.infinity,
+                        // padding: EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          // color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          // border: Border.all(color: Colors.grey),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<Repetition>(
+                            value: selectedRepetition,
+                            hint: Text("Select repetition"),
+                            isExpanded: true,
+                            items: snapshot.data!.map((Repetition repetition) {
+                              return DropdownMenuItem<Repetition>(
+                                value: repetition,
+                                child: Text(repetition.name),
+                              );
+                            }).toList(),
+                            onChanged: (Repetition? newValue) {
+                              setStateDialog(() {
+                                selectedRepetition = newValue;
+                              });
+                            },
+                          ),
                         ),
                       );
                     },
@@ -251,7 +275,8 @@ class _HomeState extends State<Home> {
 
                       _databaseService.addTask(
                         _task!,
-                        getDateText(_selectedInitialDay),
+                        getDateText(selectedInitialDay),
+                        selectedRepetition!.id,
                       );
                       setStateDialog(() {
                         _task = null;
@@ -267,7 +292,7 @@ class _HomeState extends State<Home> {
                         fontSize: 20,
                       ),
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
