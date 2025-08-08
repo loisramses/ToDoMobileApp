@@ -90,7 +90,7 @@ class DatabaseService {
     final db = await database;
     final data = await db.query(
       _repetitionTableName,
-      where: "id =?",
+      where: "id = ?",
       whereArgs: [id],
     );
     return data
@@ -120,7 +120,19 @@ class DatabaseService {
 
   Future<List<Task>> getTasks() async {
     final db = await database;
-    final data = await db.query(_tasksTableName);
+    final data = await db.rawQuery('''
+    SELECT
+      t.id,
+      t.content,
+      t.status,
+      t.initialDate,
+      t.initialTime,
+      t.duration,
+      r.id AS repetitionId,
+      r.name AS repetitionName
+    FROM $_tasksTableName AS t
+    INNER JOIN $_repetitionTableName AS r ON t.repetitionId = r.id
+    ''', []);
     return data
         .map(
           (e) => Task(
@@ -130,7 +142,10 @@ class DatabaseService {
             initialDate: e['initialDate'] as String,
             duration: e['duration'] as String,
             initialTime: e['initialTime'] as String,
-            repetitionId: e['repetitionId'] as int,
+            repetition: Repetition(
+              id: e['repetitionId'] as int,
+              name: e['repetitionText'] as String,
+            ),
           ),
         )
         .toList();
@@ -138,11 +153,20 @@ class DatabaseService {
 
   Future<List<Task>> getTasksByDate(String date) async {
     final db = await database;
-    final data = await db.query(
-      _tasksTableName,
-      where: 'initialDate = ?',
-      whereArgs: [date],
-    );
+    final data = await db.rawQuery('''
+    SELECT
+      t.id,
+      t.content,
+      t.status,
+      t.initialDate,
+      t.initialTime,
+      t.duration,
+      r.id AS repetitionId,
+      r.name AS repetitionName
+    FROM $_tasksTableName AS t
+    INNER JOIN $_repetitionTableName AS r ON t.repetitionId = r.id
+    WHERE t.initialDate = ?
+    ''', [date]);
     return data
         .map(
           (e) => Task(
@@ -152,7 +176,10 @@ class DatabaseService {
             initialDate: e['initialDate'] as String,
             duration: e['duration'] as String,
             initialTime: e['initialTime'] as String,
-            repetitionId: e['repetitionId'] as int,
+            repetition: Repetition(
+              id: e['repetitionId'] as int,
+              name: e['repetitionName'] as String,
+            ),
           ),
         )
         .toList();

@@ -14,8 +14,6 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final DatabaseService _databaseService = DatabaseService.instance;
-  String? _task;
-
   final todosList = null;
   DateTime _focusedDay = DateTime.now();
 
@@ -114,7 +112,7 @@ class _HomeState extends State<Home> {
                           _showConfirmBox(context, task);
                         },
                         title: Text(
-                          task.content,
+                          "${task.content} ${task.repetition.name}",
                           style: TextStyle(
                             decoration: task.status == 1
                                 ? TextDecoration.lineThrough
@@ -144,11 +142,13 @@ class _HomeState extends State<Home> {
   }
 
   Future<dynamic> _showDialogAddTask(BuildContext context) {
+    String? task;
     return showDialog(
       context: context,
       builder: (_) {
         DateTime selectedInitialDay = _focusedDay;
         TimeOfDay selectedTimeOfDay = TimeOfDay.now();
+        TimeOfDay duration = TimeOfDay(hour: 0, minute: 0);
         Repetition? selectedRepetition;
         bool allDay = true;
         VoidCallback? chooseDayButton;
@@ -164,7 +164,7 @@ class _HomeState extends State<Home> {
                   TextField(
                     onSubmitted: (value) {
                       setStateDialog(() {
-                        _task = value;
+                        task = value;
                       });
                     },
                     decoration: InputDecoration(
@@ -175,24 +175,32 @@ class _HomeState extends State<Home> {
                         ),
                         hintText: 'Write your task...'),
                   ),
-                  Text("Day"),
-                  OutlinedButton(
-                    onPressed: () async {
-                      DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        firstDate: firstDay,
-                        lastDate: lastDay,
-                        initialDate: _focusedDay,
-                      );
-                      setStateDialog(() {
-                        selectedInitialDay = pickedDate ?? _focusedDay;
-                      });
-                    },
-                    child: Text(
-                      getDateText(selectedInitialDay),
-                    ),
+                  SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Text("Day"),
+                      Expanded(
+                        child: Center(
+                          child: OutlinedButton(
+                            onPressed: () async {
+                              DateTime? pickedDate = await showDatePicker(
+                                context: context,
+                                firstDate: firstDay,
+                                lastDate: lastDay,
+                                initialDate: _focusedDay,
+                              );
+                              setStateDialog(() {
+                                selectedInitialDay = pickedDate ?? _focusedDay;
+                              });
+                            },
+                            child: Text(
+                              getDateText(selectedInitialDay),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Text("Repetition"),
                   Row(
                     children: [
                       Text("All day"),
@@ -225,63 +233,93 @@ class _HomeState extends State<Home> {
                       ),
                     ],
                   ),
-                  FutureBuilder<List<Repetition>>(
-                    future: _databaseService.getRepetitions(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      } else if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      } else if (!snapshot.hasData || snapshot.data == null) {
-                        return Text('No data');
-                      }
+                  Row(
+                    children: [
+                      Text("Repetition"),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: FutureBuilder<List<Repetition>>(
+                          future: _databaseService.getRepetitions(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return CircularProgressIndicator();
+                            } else if (snapshot.hasError) {
+                              return Text('Error: ${snapshot.error}');
+                            } else if (!snapshot.hasData ||
+                                snapshot.data == null) {
+                              return Text('No data');
+                            }
 
-                      selectedRepetition =
-                          selectedRepetition ?? snapshot.data!.first;
+                            selectedRepetition =
+                                selectedRepetition ?? snapshot.data!.first;
 
-                      return Container(
-                        width: double.infinity,
-                        // padding: EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          // color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          // border: Border.all(color: Colors.grey),
+                            return SizedBox(
+                              width: double.infinity,
+                              // padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<Repetition>(
+                                  value: selectedRepetition,
+                                  hint: Text("Select repetition"),
+                                  isExpanded: true,
+                                  items: snapshot.data!
+                                      .map((Repetition repetition) {
+                                    return DropdownMenuItem<Repetition>(
+                                      value: repetition,
+                                      child: Text(repetition.name),
+                                    );
+                                  }).toList(),
+                                  onChanged: (Repetition? newValue) {
+                                    setStateDialog(() {
+                                      selectedRepetition = newValue;
+                                    });
+                                  },
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<Repetition>(
-                            value: selectedRepetition,
-                            hint: Text("Select repetition"),
-                            isExpanded: true,
-                            items: snapshot.data!.map((Repetition repetition) {
-                              return DropdownMenuItem<Repetition>(
-                                value: repetition,
-                                child: Text(repetition.name),
-                              );
-                            }).toList(),
-                            onChanged: (Repetition? newValue) {
-                              setStateDialog(() {
-                                selectedRepetition = newValue;
-                              });
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Text("Duration"),
+                      SizedBox(width: 10),
+                      OutlinedButton(
+                        onPressed: () async {
+                          TimeOfDay? pickedDuration = await showTimePicker(
+                            context: context,
+                            initialTime: duration,
+                          );
+                          setStateDialog(
+                            () {
+                              duration = pickedDuration ??
+                                  TimeOfDay(hour: 0, minute: 0);
                             },
-                          ),
+                          );
+                        },
+                        child: Text(
+                          duration.format(context),
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                   MaterialButton(
                     color: Theme.of(context).colorScheme.primary,
                     onPressed: () {
-                      if (_task == null || _task == '') return;
+                      if (task == null || task == '') return;
 
                       _databaseService.addTask(
-                        _task!,
+                        task!,
                         getDateText(selectedInitialDay),
                         selectedRepetition!.id,
                       );
                       setStateDialog(() {
-                        _task = null;
+                        task = null;
                       });
                       Navigator.pop(context);
+                      setState(() {});
                     },
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20)),
