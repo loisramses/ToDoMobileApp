@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:todo_app/screens/home.dart';
+import 'package:todo_app/screens/main.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:todo_app/utils/locale.dart';
 
@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrangeAccent),
         useMaterial3: true,
       ),
-      home: const Home(),
+      home: const MainScreen(),
     );
   }
 }

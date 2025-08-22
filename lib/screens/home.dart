@@ -4,6 +4,7 @@ import 'package:todo_app/models/repetition.dart';
 import 'package:todo_app/services/database_service.dart';
 
 import '../models/task.dart';
+import '../widgets/showDialogs/show_confirm_box.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -55,7 +56,6 @@ class _HomeState extends State<Home> {
           color: Colors.white,
         ),
       ),
-      appBar: _buildAppBar(),
       body: Container(
         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
         child: Column(
@@ -91,12 +91,39 @@ class _HomeState extends State<Home> {
               rowHeight: 40,
               currentDay: DateTime.now(),
             ),
-            Text(
-              taskDateText,
-              style: TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w900,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      taskDateText,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _focusedDay = today;
+                      taskDateText =
+                          getDateText(_focusedDay, day: true, month: true);
+                    });
+                  },
+                  style: ButtonStyle(
+                    backgroundColor:
+                        WidgetStateProperty.all<Color>(Colors.cyan.shade100),
+                  ),
+                  child: Text(
+                    getDateText(today, day: true),
+                    style: TextStyle(
+                      color: Colors.black,
+                    ),
+                  ),
+                )
+              ],
             ),
             Expanded(
               child: FutureBuilder(
@@ -109,7 +136,17 @@ class _HomeState extends State<Home> {
                       Task task = snapshot.data![index];
                       return ListTile(
                         onLongPress: () {
-                          _showConfirmBox(context, task);
+                          showConfirmBox(
+                            context: context,
+                            title: 'Remove Task',
+                            confirmationText:
+                                'Are you sure you want to remove this task?',
+                            onPressed: () {
+                              _databaseService.deleteTask(task.id);
+                              setState(() {});
+                              Navigator.pop(context);
+                            },
+                          );
                         },
                         title: Text(
                           "${task.content} ${task.repetition.name}",
@@ -152,6 +189,8 @@ class _HomeState extends State<Home> {
         Repetition? selectedRepetition;
         bool allDay = true;
         VoidCallback? chooseDayButton;
+        final TextEditingController taskTextController =
+            TextEditingController();
 
         return StatefulBuilder(builder: (context, setStateDialog) {
           return AlertDialog(
@@ -162,11 +201,7 @@ class _HomeState extends State<Home> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
-                    onSubmitted: (value) {
-                      setStateDialog(() {
-                        task = value;
-                      });
-                    },
+                    controller: taskTextController,
                     decoration: InputDecoration(
                         fillColor: Colors.white,
                         filled: true,
@@ -308,6 +343,8 @@ class _HomeState extends State<Home> {
                   MaterialButton(
                     color: Theme.of(context).colorScheme.primary,
                     onPressed: () {
+                      task = taskTextController.text;
+
                       if (task == null || task == '') return;
 
                       _databaseService.addTask(
@@ -337,66 +374,6 @@ class _HomeState extends State<Home> {
           );
         });
       },
-    );
-  }
-
-  Future<dynamic> _showConfirmBox(BuildContext context, Task task) {
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey.shade300,
-          title: Center(child: Text('Remove Task')),
-          content: Text('Are you sure you want to remove this task?'),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    _databaseService.deleteTask(task.id);
-                    setState(() {});
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Confirm',
-                    style: TextStyle(
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.grey.shade400,
-      elevation: 0,
-      centerTitle: true,
-      leading: Icon(
-        Icons.menu,
-        color: Colors.black45,
-        size: 38,
-      ),
-      title: Text(
-        "TodoApp",
-      ),
     );
   }
 }
