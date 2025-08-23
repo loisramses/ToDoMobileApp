@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:todo_app/models/repetition.dart';
 import 'package:todo_app/services/database_service.dart';
+import 'package:todo_app/utils/date_time_utils.dart';
+import 'package:todo_app/widgets/showDialogs/show_add_task_box.dart';
+import 'package:todo_app/widgets/todo_item.dart';
 
-import '../models/task.dart';
-import '../widgets/showDialogs/show_confirm_box.dart';
+import 'package:todo_app/models/task.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -25,30 +26,18 @@ class _HomeState extends State<Home> {
 
   late String taskDateText = getDateText(_focusedDay, day: true, month: true);
 
-  String getDateText(DateTime date,
-      {bool day = false, bool month = false, bool year = false}) {
-    String dateString = date.toString().split(" ")[0];
-    List<String> dateStringSplit = dateString.split("-");
-    String dayString = dateStringSplit[2];
-    String monthString = dateStringSplit[1];
-    String yearString = dateStringSplit[0];
-    String res = "";
-    if (day) res = dayString;
-    if (month) res = "$res-$monthString";
-    if (year) res = "$res-$yearString";
-    if (res.isEmpty || date.year != today.year) {
-      return "$dayString-$monthString-$yearString";
-    }
-    return res;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade500,
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showDialogAddTask(context);
+        onPressed: () async {
+          await showAddTaskBox(
+            context: context,
+            databaseService: _databaseService,
+            focusedDay: _focusedDay,
+          );
+          setState(() {});
         },
         backgroundColor: Colors.blue,
         child: Icon(
@@ -134,38 +123,19 @@ class _HomeState extends State<Home> {
                     itemCount: snapshot.data?.length ?? 0,
                     itemBuilder: (context, index) {
                       Task task = snapshot.data![index];
-                      return ListTile(
-                        onLongPress: () {
-                          showConfirmBox(
-                            context: context,
-                            title: 'Remove Task',
-                            confirmationText:
-                                'Are you sure you want to remove this task?',
-                            onPressed: () {
-                              _databaseService.deleteTask(task.id);
-                              setState(() {});
-                              Navigator.pop(context);
-                            },
-                          );
+                      return TaskItem(
+                        task: task,
+                        onDelete: (taskId) {
+                          _databaseService.deleteTask(task.id);
+                          setState(() {});
                         },
-                        title: Text(
-                          "${task.content} ${task.repetition.name}",
-                          style: TextStyle(
-                            decoration: task.status == 1
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
-                        ),
-                        trailing: Checkbox(
-                          value: task.status == 1,
-                          onChanged: (value) {
-                            _databaseService.updateTaskStatus(
-                              task.id,
-                              value == true ? 1 : 0,
-                            );
-                            setState(() {});
-                          },
-                        ),
+                        onStatusUpdate: (taskId, status) {
+                          _databaseService.updateTaskStatus(
+                            taskId,
+                            status,
+                          );
+                          setState(() {});
+                        },
                       );
                     },
                   );
@@ -175,205 +145,6 @@ class _HomeState extends State<Home> {
           ],
         ),
       ),
-    );
-  }
-
-  Future<dynamic> _showDialogAddTask(BuildContext context) {
-    String? task;
-    return showDialog(
-      context: context,
-      builder: (_) {
-        DateTime selectedInitialDay = _focusedDay;
-        TimeOfDay selectedTimeOfDay = TimeOfDay.now();
-        TimeOfDay duration = TimeOfDay(hour: 0, minute: 0);
-        Repetition? selectedRepetition;
-        bool allDay = true;
-        VoidCallback? chooseDayButton;
-        final TextEditingController taskTextController =
-            TextEditingController();
-
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            backgroundColor: Colors.grey.shade300,
-            title: Center(child: Text('Add Task')),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: taskTextController,
-                    decoration: InputDecoration(
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        hintText: 'Write your task...'),
-                  ),
-                  SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Text("Day"),
-                      Expanded(
-                        child: Center(
-                          child: OutlinedButton(
-                            onPressed: () async {
-                              DateTime? pickedDate = await showDatePicker(
-                                context: context,
-                                firstDate: firstDay,
-                                lastDate: lastDay,
-                                initialDate: _focusedDay,
-                              );
-                              setStateDialog(() {
-                                selectedInitialDay = pickedDate ?? _focusedDay;
-                              });
-                            },
-                            child: Text(
-                              getDateText(selectedInitialDay),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Text("All day"),
-                      Checkbox(
-                        value: allDay,
-                        onChanged: (value) {
-                          setStateDialog(() {
-                            allDay = value!;
-                            if (!allDay) {
-                              chooseDayButton = () async {
-                                TimeOfDay? pickedTimeOfDay =
-                                    await showTimePicker(
-                                  context: context,
-                                  initialTime: selectedTimeOfDay,
-                                );
-                                selectedTimeOfDay =
-                                    pickedTimeOfDay ?? TimeOfDay.now();
-                              };
-                            } else {
-                              chooseDayButton = null;
-                            }
-                          });
-                        },
-                      ),
-                      OutlinedButton(
-                        onPressed: chooseDayButton,
-                        child: Text(
-                          selectedTimeOfDay.format(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Text("Repetition"),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: FutureBuilder<List<Repetition>>(
-                          future: _databaseService.getRepetitions(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return CircularProgressIndicator();
-                            } else if (snapshot.hasError) {
-                              return Text('Error: ${snapshot.error}');
-                            } else if (!snapshot.hasData ||
-                                snapshot.data == null) {
-                              return Text('No data');
-                            }
-
-                            selectedRepetition =
-                                selectedRepetition ?? snapshot.data!.first;
-
-                            return SizedBox(
-                              width: double.infinity,
-                              // padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<Repetition>(
-                                  value: selectedRepetition,
-                                  hint: Text("Select repetition"),
-                                  isExpanded: true,
-                                  items: snapshot.data!
-                                      .map((Repetition repetition) {
-                                    return DropdownMenuItem<Repetition>(
-                                      value: repetition,
-                                      child: Text(repetition.name),
-                                    );
-                                  }).toList(),
-                                  onChanged: (Repetition? newValue) {
-                                    setStateDialog(() {
-                                      selectedRepetition = newValue;
-                                    });
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Text("Duration"),
-                      SizedBox(width: 10),
-                      OutlinedButton(
-                        onPressed: () async {
-                          TimeOfDay? pickedDuration = await showTimePicker(
-                            context: context,
-                            initialTime: duration,
-                          );
-                          setStateDialog(
-                            () {
-                              duration = pickedDuration ??
-                                  TimeOfDay(hour: 0, minute: 0);
-                            },
-                          );
-                        },
-                        child: Text(
-                          duration.format(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  MaterialButton(
-                    color: Theme.of(context).colorScheme.primary,
-                    onPressed: () {
-                      task = taskTextController.text;
-
-                      if (task == null || task == '') return;
-
-                      _databaseService.addTask(
-                        task!,
-                        getDateText(selectedInitialDay),
-                        selectedRepetition!.id,
-                      );
-                      setStateDialog(() {
-                        task = null;
-                      });
-                      Navigator.pop(context);
-                      setState(() {});
-                    },
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Text(
-                      'Add',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          );
-        });
-      },
     );
   }
 }

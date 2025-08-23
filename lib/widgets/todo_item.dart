@@ -1,58 +1,45 @@
 import 'package:flutter/material.dart';
 
-import '../models/task.dart';
+import 'package:todo_app/models/task.dart';
+import 'showDialogs/show_confirm_box.dart';
 
-class TodoItem extends StatelessWidget {
-  final Task todo;
-  final onToDoChanged;
-  final onToDoDelete;
+class TaskItem extends StatelessWidget {
+  final Task task;
+  final Function(int) onDelete;
+  final Function(int, int) onStatusUpdate;
 
-  const TodoItem(
-      {super.key,
-      required this.todo,
-      required this.onToDoChanged,
-      required this.onToDoDelete});
+  const TaskItem({
+    super.key,
+    required this.task,
+    required this.onDelete,
+    required this.onStatusUpdate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.all(10),
-      child: ListTile(
-        onTap: () {
-          onToDoChanged(todo);
+    return ListTile(
+      onLongPress: () {
+        showConfirmBox(
+          context: context,
+          title: 'Remove Task',
+          confirmationText: 'Are you sure you want to remove this task?',
+          onPressed: () {
+            onDelete(task.id);
+            Navigator.pop(context);
+          },
+        );
+      },
+      title: Text(
+        "${task.content} ${task.repetition.name}",
+        style: TextStyle(
+          decoration: task.status == 1 ? TextDecoration.lineThrough : null,
+        ),
+      ),
+      trailing: Checkbox(
+        value: task.status == 1,
+        onChanged: (value) {
+          onStatusUpdate(task.id, value == true ? 1 : 0);
         },
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        tileColor: Colors.white,
-        leading: IconButton(
-          icon: todo.status == 1
-              ? Icon(Icons.check_circle)
-              : Icon(Icons.check_circle_outline),
-          color: Colors.blue,
-          onPressed: () {
-            onToDoChanged(todo);
-            debugPrint('check');
-          },
-        ),
-        title: Text(
-          todo.content,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-            decoration: todo.status == 0 ? TextDecoration.lineThrough : null,
-          ),
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.delete_outline_outlined,
-            color: Colors.redAccent,
-          ),
-          onPressed: () {
-            onToDoDelete(todo);
-            debugPrint('delete');
-          },
-        ),
       ),
     );
   }

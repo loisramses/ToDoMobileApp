@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:todo_app/models/task.dart';
@@ -144,7 +145,7 @@ class DatabaseService {
             initialTime: e['initialTime'] as String,
             repetition: Repetition(
               id: e['repetitionId'] as int,
-              name: e['repetitionText'] as String,
+              name: e['repetitionName'] as String,
             ),
           ),
         )
