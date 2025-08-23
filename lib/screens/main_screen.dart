@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'home.dart';
-import 'settings.dart';
-import 'tasks_list.dart';
+import 'package:todo_app/services/database_service.dart';
+import 'package:todo_app/widgets/showDialogs/show_add_task_box.dart';
+import 'home_screen.dart';
+import 'settings_screen.dart';
+import 'tasks_list_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -12,6 +14,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectIndex = 1;
+  final DatabaseService _databaseService = DatabaseService.instance;
 
   late PageController _pageController;
 
@@ -63,6 +66,23 @@ class _MainScreenState extends State<MainScreen> {
         },
         children: screens,
       ),
+      floatingActionButton: _selectIndex != 2
+          ? FloatingActionButton(
+              onPressed: () async {
+                await showAddTaskBox(
+                  context: context,
+                  databaseService: _databaseService,
+                  focusedDay: DateTime.now(),
+                );
+                setState(() {});
+              },
+              backgroundColor: Colors.blue,
+              child: Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
+            )
+          : null,
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(

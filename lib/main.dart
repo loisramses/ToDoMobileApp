@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:todo_app/screens/main.dart';
+import 'package:todo_app/screens/main_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:todo_app/utils/locale.dart';
+import 'package:todo_app/utils/locale_utils.dart';
 
 void main() {
   initializeDateFormatting().then(
