@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:todo_app/models/task.dart';
 import 'package:todo_app/services/database_service.dart';
-import 'package:todo_app/widgets/task_item.dart';
+import 'package:todo_app/widgets/grouped_task_list.dart';
 
 class TasksList extends StatefulWidget {
   const TasksList({super.key});
@@ -12,35 +11,22 @@ class TasksList extends StatefulWidget {
 
 class _TasksListState extends State<TasksList> {
   final DatabaseService _databaseService = DatabaseService.instance;
-  final todosList = null;
+  final tasksList = null;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: FutureBuilder(
-        future: _databaseService.getTasks(),
-        builder: (context, snapshot) {
-          return ListView.builder(
-            itemCount: snapshot.data?.length ?? 0,
-            itemBuilder: (context, index) {
-              Task task = snapshot.data![index];
-              return TaskItem(
-                task: task,
-                onDelete: (taskId) {
-                  _databaseService.deleteTask(task.id);
-                  setState(() {});
-                },
-                onStatusUpdate: (taskId, status) {
-                  _databaseService.updateTaskStatus(
-                    taskId,
-                    status,
-                  );
-                  setState(() {});
-                },
-              );
-            },
-          );
-        },
+    return Scaffold(
+      backgroundColor: Colors.grey.shade500,
+      body: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+        child: GroupedTaskList(
+          databaseService: _databaseService,
+          onDelete: (taskId) => _databaseService.deleteTask(taskId),
+          onStatusUpdate: (taskId, status) => _databaseService.updateTaskStatus(
+            taskId,
+            status,
+          ),
+        ),
       ),
     );
   }

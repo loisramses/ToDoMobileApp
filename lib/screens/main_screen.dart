@@ -66,7 +66,7 @@ class _MainScreenState extends State<MainScreen> {
         },
         children: screens,
       ),
-      floatingActionButton: _selectIndex != 2
+      floatingActionButton: _selectIndex == 1
           ? FloatingActionButton(
               onPressed: () async {
                 await showAddTaskBox(

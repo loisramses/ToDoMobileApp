@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/models/task.dart';
-import 'package:todo_app/services/database_service.dart';
 import 'package:todo_app/widgets/task_item.dart';
 
 class TaskList extends StatefulWidget {
-  final DatabaseService databaseService;
   final Function(int) onDelete;
   final Function(int, int) onStatusUpdate;
+  final bool scrollable;
   final Widget header;
-  final String date;
+  final List<Task> tasks;
 
   const TaskList({
     super.key,
-    required this.databaseService,
     required this.header,
-    required this.date,
+    required this.tasks,
     required this.onDelete,
     required this.onStatusUpdate,
+    this.scrollable = true,
   });
 
   @override
@@ -29,30 +28,46 @@ class _TaskListState extends State<TaskList> {
     return Column(
       children: [
         widget.header,
-        Expanded(
-          child: FutureBuilder(
-            future: widget.databaseService.getTasksByDate(widget.date),
-            builder: (context, snapshot) {
-              return ListView.builder(
-                itemCount: snapshot.data?.length ?? 0,
-                itemBuilder: (context, index) {
-                  Task task = snapshot.data![index];
-                  return TaskItem(
-                    task: task,
-                    onDelete: (taskId) async {
-                      await widget.onDelete(taskId);
-                      setState(() {});
-                    },
-                    onStatusUpdate: (taskId, value) async {
-                      await widget.onStatusUpdate(taskId, value);
-                      setState(() {});
-                    },
-                  );
+        if (widget.scrollable) ...[
+          Expanded(
+            child: ListView.builder(
+              itemCount: widget.tasks.length,
+              itemBuilder: (context, index) {
+                Task task = widget.tasks[index];
+                return TaskItem(
+                  task: task,
+                  onDelete: (taskId) async {
+                    await widget.onDelete(taskId);
+                    setState(() {
+                      widget.tasks.removeAt(index);
+                    });
+                  },
+                  onStatusUpdate: (taskId, value) async {
+                    await widget.onStatusUpdate(taskId, value);
+                    setState(() {
+                      widget.tasks[index].status = value;
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+        ] else
+          ...widget.tasks.map(
+            (task) {
+              return TaskItem(
+                task: task,
+                onDelete: (taskId) async {
+                  await widget.onDelete(taskId);
+                  // setState(() {});
+                },
+                onStatusUpdate: (taskId, value) async {
+                  await widget.onStatusUpdate(taskId, value);
+                  // setState(() {});
                 },
               );
             },
           ),
-        ),
       ],
     );
   }

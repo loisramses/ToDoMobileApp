@@ -132,16 +132,17 @@ class DatabaseService {
       r.name AS repetitionName
     FROM $_tasksTableName AS t
     INNER JOIN $_repetitionTableName AS r ON t.repetitionId = r.id
+    ORDER BY t.initialDate DESC
     ''', []);
     return data
         .map(
           (e) => Task(
-            id: e['id'] as int,
-            content: e['content'] as String,
-            status: e['status'] as int,
-            initialDate: e['initialDate'] as String,
-            duration: e['duration'] as String,
-            initialTime: e['initialTime'] as String,
+            id: e[_tasksIdColumnName] as int,
+            content: e[_tasksContentColumnName] as String,
+            status: e[_tasksStatusColumnName] as int,
+            initialDate: e[_tasksInitialDateColumnName] as String,
+            initialTime: e[_tasksInitialTimeColumnName] as String,
+            duration: e[_tasksDurationColumnName] as String,
             repetition: Repetition(
               id: e['repetitionId'] as int,
               name: e['repetitionName'] as String,
@@ -170,12 +171,12 @@ class DatabaseService {
     return data
         .map(
           (e) => Task(
-            id: e['id'] as int,
-            content: e['content'] as String,
-            status: e['status'] as int,
-            initialDate: e['initialDate'] as String,
-            duration: e['duration'] as String,
-            initialTime: e['initialTime'] as String,
+            id: e[_tasksIdColumnName] as int,
+            content: e[_tasksContentColumnName] as String,
+            status: e[_tasksStatusColumnName] as int,
+            initialDate: e[_tasksInitialDateColumnName] as String,
+            initialTime: e[_tasksInitialTimeColumnName] as String,
+            duration: e[_tasksDurationColumnName] as String,
             repetition: Repetition(
               id: e['repetitionId'] as int,
               name: e['repetitionName'] as String,
@@ -183,6 +184,17 @@ class DatabaseService {
           ),
         )
         .toList();
+  }
+
+  Future<List<String>> getTasksUniqueDates() async {
+    final db = await database;
+    final data = await db.query(
+      _tasksTableName,
+      columns: [_tasksInitialDateColumnName],
+      distinct: true,
+      orderBy: _tasksInitialDateColumnName,
+    );
+    return data.map((e) => e[_tasksInitialDateColumnName] as String).toList();
   }
 
   void updateTaskStatus(int id, int status) async {

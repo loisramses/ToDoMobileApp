@@ -1,9 +1,9 @@
 import 'package:todo_app/models/repetition.dart';
 
 class Task {
-  final int id, status;
-  final Repetition repetition;
-  final String content, initialDate, initialTime, duration;
+  int id, status;
+  Repetition repetition;
+  String content, initialDate, initialTime, duration;
 
   Task({
     required this.id,

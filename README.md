@@ -19,5 +19,4 @@ samples, guidance on mobile development, and a full API reference.
 ##
 
 Next steps:
-- change the future builders to have the key property (investigate first if its faster than the setState())
-- create grouped tasklist 
+- fix issue with updating ui aswell as the db at the same time, without refreshing the whole screen, just the item

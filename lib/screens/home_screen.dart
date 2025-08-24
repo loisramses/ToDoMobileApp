@@ -63,49 +63,57 @@ class _HomeState extends State<Home> {
               currentDay: DateTime.now(),
             ),
             Expanded(
-              child: TaskList(
-                databaseService: _databaseService,
-                header: Row(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          taskDateText,
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
+              child: FutureBuilder(
+                future:
+                    _databaseService.getTasksByDate(getDateText(_focusedDay)),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("Error: ${snapshot.error}"));
+                  } else {
+                    return TaskList(
+                      header: Row(
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                taskDateText,
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _focusedDay = today;
+                                taskDateText = getDateText(_focusedDay,
+                                    day: true, month: true);
+                              });
+                            },
+                            style: ButtonStyle(
+                              backgroundColor: WidgetStateProperty.all<Color>(
+                                  Colors.cyan.shade100),
+                            ),
+                            child: Text(
+                              getDateText(today, day: true),
+                              style: TextStyle(
+                                color: Colors.black,
+                              ),
+                            ),
+                          )
+                        ],
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _focusedDay = today;
-                          taskDateText =
-                              getDateText(_focusedDay, day: true, month: true);
-                        });
-                      },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all<Color>(
-                            Colors.cyan.shade100),
-                      ),
-                      child: Text(
-                        getDateText(today, day: true),
-                        style: TextStyle(
-                          color: Colors.black,
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-                date: getDateText(_focusedDay),
-                onDelete: (taskId) => _databaseService.deleteTask(taskId),
-                onStatusUpdate: (taskId, status) =>
-                    _databaseService.updateTaskStatus(
-                  taskId,
-                  status,
-                ),
+                      tasks: snapshot.data!,
+                      onDelete: (taskId) => _databaseService.deleteTask(taskId),
+                      onStatusUpdate: (taskId, status) =>
+                          _databaseService.updateTaskStatus(taskId, status),
+                    );
+                  }
+                },
               ),
             ),
           ],
