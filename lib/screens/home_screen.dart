@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:todo_app/models/task.dart';
 import 'package:todo_app/services/database_service.dart';
 import 'package:todo_app/utils/date_time_utils.dart';
 import 'package:todo_app/widgets/task_list.dart';
@@ -8,23 +9,31 @@ class Home extends StatefulWidget {
   const Home({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  State<Home> createState() => HomeState();
 }
 
-class _HomeState extends State<Home> {
+class HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
   final DatabaseService _databaseService = DatabaseService.instance;
-  final todosList = null;
-  DateTime _focusedDay = DateTime.now();
+  late List<Task> tasksList;
+  DateTime focusedDay = DateTime.now();
 
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime today = DateTime.now();
   DateTime firstDay = DateTime.utc(2000, 01, 01);
   DateTime lastDay = DateTime.utc(2999, 01, 01);
 
-  late String taskDateText = getDateText(_focusedDay, day: true, month: true);
+  late String taskDateText = getDateText(focusedDay, day: true, month: true);
+
+  @override
+  bool get wantKeepAlive => true;
+
+  void refreshTasks() {
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: Colors.grey.shade500,
       body: Container(
@@ -37,22 +46,22 @@ class _HomeState extends State<Home> {
                 titleCentered: true,
                 formatButtonVisible: false,
               ),
-              focusedDay: _focusedDay,
+              focusedDay: focusedDay,
               firstDay: firstDay,
               lastDay: lastDay,
               availableGestures: AvailableGestures.all,
-              selectedDayPredicate: (day) => isSameDay(_focusedDay, day),
+              selectedDayPredicate: (day) => isSameDay(focusedDay, day),
               onPageChanged: (focusedDay) {
                 setState(() {
-                  if (!isSameDay(focusedDay, _focusedDay)) {
+                  if (!isSameDay(focusedDay, this.focusedDay)) {
                     _calendarFormat = CalendarFormat.month;
                   }
-                  _focusedDay = focusedDay;
+                  this.focusedDay = focusedDay;
                 });
               },
               onDaySelected: (selectedDay, focusedDay) => {
                 setState(() {
-                  _focusedDay = selectedDay;
+                  this.focusedDay = selectedDay;
                   taskDateText =
                       getDateText(selectedDay, day: true, month: true);
                   _calendarFormat = CalendarFormat.week;
@@ -65,54 +74,49 @@ class _HomeState extends State<Home> {
             Expanded(
               child: FutureBuilder(
                 future:
-                    _databaseService.getTasksByDate(getDateText(_focusedDay)),
+                    _databaseService.getTasksByDate(getDateText(focusedDay)),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text("Error: ${snapshot.error}"));
-                  } else {
-                    return TaskList(
-                      header: Row(
-                        children: [
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                taskDateText,
-                                style: TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w900,
-                                ),
+                  tasksList = snapshot.data ?? [];
+                  return TaskList(
+                    header: Row(
+                      children: [
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              taskDateText,
+                              style: TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _focusedDay = today;
-                                taskDateText = getDateText(_focusedDay,
-                                    day: true, month: true);
-                              });
-                            },
-                            style: ButtonStyle(
-                              backgroundColor: WidgetStateProperty.all<Color>(
-                                  Colors.cyan.shade100),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              focusedDay = today;
+                              taskDateText = getDateText(focusedDay,
+                                  day: true, month: true);
+                            });
+                          },
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all<Color>(
+                                Colors.cyan.shade100),
+                          ),
+                          child: Text(
+                            getDateText(today, day: true),
+                            style: TextStyle(
+                              color: Colors.black,
                             ),
-                            child: Text(
-                              getDateText(today, day: true),
-                              style: TextStyle(
-                                color: Colors.black,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                      tasks: snapshot.data!,
-                      onDelete: (taskId) => _databaseService.deleteTask(taskId),
-                      onStatusUpdate: (taskId, status) =>
-                          _databaseService.updateTaskStatus(taskId, status),
-                    );
-                  }
+                          ),
+                        )
+                      ],
+                    ),
+                    tasks: tasksList,
+                    onDelete: (taskId) => _databaseService.deleteTask(taskId),
+                    onStatusUpdate: (taskId, status) =>
+                        _databaseService.updateTaskStatus(taskId, status),
+                  );
                 },
               ),
             ),

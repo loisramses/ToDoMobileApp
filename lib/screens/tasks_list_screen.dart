@@ -1,24 +1,35 @@
+// tasks_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:todo_app/services/database_service.dart';
 import 'package:todo_app/widgets/grouped_task_list.dart';
 
 class TasksList extends StatefulWidget {
-  const TasksList({super.key});
+  final Function(bool) onScroll;
+
+  const TasksList({super.key, required this.onScroll});
 
   @override
-  State<TasksList> createState() => _TasksListState();
+  State<TasksList> createState() => TasksListState();
 }
 
-class _TasksListState extends State<TasksList> {
+class TasksListState extends State<TasksList> {
   final DatabaseService _databaseService = DatabaseService.instance;
-  final tasksList = null;
+  final ScrollController _scrollController = ScrollController();
+
+  void scrollToBottom() {
+    _scrollController.animateTo(
+      _scrollController.position.minScrollExtent,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade500,
       body: Container(
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
         child: GroupedTaskList(
           databaseService: _databaseService,
           onDelete: (taskId) => _databaseService.deleteTask(taskId),
@@ -26,6 +37,8 @@ class _TasksListState extends State<TasksList> {
             taskId,
             status,
           ),
+          scrollController: _scrollController,
+          onScroll: widget.onScroll,
         ),
       ),
     );

@@ -23,6 +23,24 @@ class TaskList extends StatefulWidget {
 }
 
 class _TaskListState extends State<TaskList> {
+  late List<Task> _tasks;
+
+  @override
+  void initState() {
+    super.initState();
+    _tasks = List.from(widget.tasks);
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tasks != oldWidget.tasks) {
+      setState(() {
+        _tasks = List.from(widget.tasks);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -31,21 +49,21 @@ class _TaskListState extends State<TaskList> {
         if (widget.scrollable) ...[
           Expanded(
             child: ListView.builder(
-              itemCount: widget.tasks.length,
+              itemCount: _tasks.length,
               itemBuilder: (context, index) {
-                Task task = widget.tasks[index];
+                Task task = _tasks[index];
                 return TaskItem(
                   task: task,
                   onDelete: (taskId) async {
                     await widget.onDelete(taskId);
                     setState(() {
-                      widget.tasks.removeAt(index);
+                      _tasks.removeAt(index);
                     });
                   },
                   onStatusUpdate: (taskId, value) async {
                     await widget.onStatusUpdate(taskId, value);
                     setState(() {
-                      widget.tasks[index].status = value;
+                      _tasks[index].status = value;
                     });
                   },
                 );
@@ -53,17 +71,26 @@ class _TaskListState extends State<TaskList> {
             ),
           ),
         ] else
-          ...widget.tasks.map(
+          ..._tasks.map(
             (task) {
               return TaskItem(
                 task: task,
                 onDelete: (taskId) async {
                   await widget.onDelete(taskId);
-                  // setState(() {});
+                  setState(() {
+                    _tasks.removeWhere(
+                      (task) => task.id == taskId,
+                    );
+                  });
                 },
                 onStatusUpdate: (taskId, value) async {
                   await widget.onStatusUpdate(taskId, value);
-                  // setState(() {});
+                  setState(() {
+                    final taskIndex = _tasks.indexWhere(
+                      (task) => task.id == taskId,
+                    );
+                    _tasks[taskIndex].status = value;
+                  });
                 },
               );
             },

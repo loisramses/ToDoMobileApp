@@ -1,3 +1,4 @@
+// main_screen.dart
 import 'package:flutter/material.dart';
 import 'package:todo_app/services/database_service.dart';
 import 'package:todo_app/widgets/showDialogs/show_add_task_box.dart';
@@ -17,17 +18,23 @@ class _MainScreenState extends State<MainScreen> {
   final DatabaseService _databaseService = DatabaseService.instance;
 
   late PageController _pageController;
+  final GlobalKey<TasksListState> tasksListKey = GlobalKey<TasksListState>();
+  final GlobalKey<HomeState> homeKey = GlobalKey<HomeState>();
+  bool _showScrollButton = false;
 
-  static const List<Widget> screens = <Widget>[
-    TasksList(),
-    Home(),
-    Settings(),
-  ];
+  late final List<Widget> screens;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectIndex);
+    screens = <Widget>[
+      TasksList(key: tasksListKey, onScroll: _onTasksListScroll),
+      Home(
+        key: homeKey,
+      ),
+      const Settings(),
+    ];
   }
 
   @override
@@ -39,20 +46,60 @@ class _MainScreenState extends State<MainScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectIndex = index;
-
       _pageController.animateToPage(
         index,
-        duration: const Duration(microseconds: 100),
+        duration: const Duration(milliseconds: 100),
         curve: Curves.ease,
       );
     });
   }
 
+  void _onTasksListScroll(bool show) {
+    setState(() {
+      _showScrollButton = show;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    Widget? floatingActionButton;
+
+    if (_selectIndex == 0) {
+      if (_showScrollButton) {
+        floatingActionButton = FloatingActionButton(
+          onPressed: () {
+            tasksListKey.currentState?.scrollToBottom();
+          },
+          backgroundColor: Colors.blue,
+          child: const Icon(
+            Icons.arrow_downward,
+            color: Colors.white,
+          ),
+        );
+      } else {
+        floatingActionButton = null;
+      }
+    } else if (_selectIndex == 1) {
+      floatingActionButton = FloatingActionButton(
+        onPressed: () async {
+          await showAddTaskBox(
+            context: context,
+            databaseService: _databaseService,
+            focusedDay: homeKey.currentState?.focusedDay ?? DateTime.now(),
+          );
+          homeKey.currentState?.refreshTasks();
+        },
+        backgroundColor: Colors.blue,
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('TodoApp'),
+        title: const Text('TodoApp'),
         backgroundColor: Colors.grey.shade400,
         elevation: 0,
         centerTitle: true,
@@ -66,23 +113,7 @@ class _MainScreenState extends State<MainScreen> {
         },
         children: screens,
       ),
-      floatingActionButton: _selectIndex == 1
-          ? FloatingActionButton(
-              onPressed: () async {
-                await showAddTaskBox(
-                  context: context,
-                  databaseService: _databaseService,
-                  focusedDay: DateTime.now(),
-                );
-                setState(() {});
-              },
-              backgroundColor: Colors.blue,
-              child: Icon(
-                Icons.add,
-                color: Colors.white,
-              ),
-            )
-          : null,
+      floatingActionButton: floatingActionButton,
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
