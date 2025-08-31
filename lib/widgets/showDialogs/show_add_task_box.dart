@@ -32,6 +32,7 @@ Future<dynamic> showAddTaskBox({
               children: [
                 TextField(
                   controller: taskTextController,
+                  autofocus: true,
                   decoration: InputDecoration(
                     fillColor: Colors.white,
                     filled: true,

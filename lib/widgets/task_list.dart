@@ -43,6 +43,10 @@ class _TaskListState extends State<TaskList> {
 
   @override
   Widget build(BuildContext context) {
+    if (_tasks.isEmpty && !widget.scrollable) {
+      return SizedBox.shrink();
+    }
+
     return Column(
       children: [
         widget.header,
@@ -57,7 +61,9 @@ class _TaskListState extends State<TaskList> {
                   onDelete: (taskId) async {
                     await widget.onDelete(taskId);
                     setState(() {
-                      _tasks.removeAt(index);
+                      _tasks.removeWhere(
+                        (task) => task.id == taskId,
+                      );
                     });
                   },
                   onStatusUpdate: (taskId, value) async {

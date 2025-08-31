@@ -45,6 +45,9 @@ class _MainScreenState extends State<MainScreen> {
 
   void _onItemTapped(int index) {
     setState(() {
+      if (_selectIndex != index) {
+        _showScrollButton = false;
+      }
       _selectIndex = index;
       _pageController.animateToPage(
         index,
@@ -52,6 +55,10 @@ class _MainScreenState extends State<MainScreen> {
         curve: Curves.ease,
       );
     });
+  }
+
+  void _onPageChanged(int index) {
+    _onItemTapped(index);
   }
 
   void _onTasksListScroll(bool show) {
@@ -106,11 +113,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
       body: PageView(
         controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _selectIndex = index;
-          });
-        },
+        onPageChanged: _onPageChanged,
         children: screens,
       ),
       floatingActionButton: floatingActionButton,

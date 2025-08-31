@@ -27,13 +27,11 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
   @override
   void initState() {
     super.initState();
-    // Add a listener to the scroll controller
     widget.scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    // Clean up the listener
     widget.scrollController.removeListener(_onScroll);
     super.dispose();
   }

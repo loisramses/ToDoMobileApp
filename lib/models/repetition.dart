@@ -34,6 +34,13 @@ class Repetition {
   @override
   int get hashCode => id.hashCode;
 
+  Map<String, dynamic> asMap() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
+
   @override
   String toString() {
     return "Repetition(id: $id, name: $name)";
