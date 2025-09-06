@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:todo_app/models/task.dart';
@@ -103,7 +104,13 @@ class DatabaseService {
         .toList()[0];
   }
 
-  void addTask(String content, String initialDate, int repetitionId) async {
+  void addTask({
+    required String content,
+    required String initialDate,
+    required String initialTime,
+    required String duration,
+    required int repetitionId,
+  }) async {
     final db = await database;
     await db.insert(
       _tasksTableName,
@@ -111,8 +118,8 @@ class DatabaseService {
         _tasksContentColumnName: content,
         _tasksStatusColumnName: 0,
         _tasksInitialDateColumnName: initialDate,
-        _tasksInitialTimeColumnName: "",
-        _tasksDurationColumnName: "",
+        _tasksInitialTimeColumnName: initialTime,
+        _tasksDurationColumnName: duration,
         _tasksRepetitionIdColumnName: repetitionId,
       },
     );
@@ -206,6 +213,16 @@ class DatabaseService {
         },
         where: 'id = ?',
         whereArgs: [id]);
+  }
+
+  void updateTask(Task task) async {
+    final db = await database;
+    await db.update(
+      _tasksTableName,
+      task.asMap(),
+      where: 'id = ?',
+      whereArgs: [task.id],
+    );
   }
 
   void deleteTask(int id) async {

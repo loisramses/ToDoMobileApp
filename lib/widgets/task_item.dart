@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 
 import 'package:todo_app/models/task.dart';
+import 'package:todo_app/services/database_service.dart';
+import 'package:todo_app/widgets/showDialogs/show_edit_task_box.dart';
 import 'showDialogs/show_confirm_box.dart';
 
-class TaskItem extends StatelessWidget {
+class TaskItem extends StatefulWidget {
   final Task task;
   final Function(int) onDelete;
   final Function(int, int) onStatusUpdate;
@@ -16,30 +19,56 @@ class TaskItem extends StatelessWidget {
   });
 
   @override
+  State<TaskItem> createState() => _TaskItemState();
+}
+
+class _TaskItemState extends State<TaskItem> {
+  late Task _task;
+
+  @override
+  void initState() {
+    super.initState();
+    _task = widget.task;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final DatabaseService databaseService = DatabaseService.instance;
+
     return ListTile(
+      onTap: () async {
+        final updatedTask = await showEditTaskBox(
+            context: context,
+            databaseService: databaseService,
+            task: widget.task);
+        setState(() {
+          _task = updatedTask ?? widget.task;
+        });
+      },
       onLongPress: () {
         showConfirmBox(
           context: context,
           title: 'Remove Task',
           confirmationText: 'Are you sure you want to remove this task?',
           onPressed: () {
-            onDelete(task.id);
+            widget.onDelete(widget.task.id);
             Navigator.pop(context);
           },
         );
       },
       title: Text(
-        "${task.content} ${task.repetition.name}",
+        "${widget.task.content} ${widget.task.repetition.name}",
         style: TextStyle(
-          decoration: task.status == 1 ? TextDecoration.lineThrough : null,
+          decoration:
+              widget.task.status == 1 ? TextDecoration.lineThrough : null,
         ),
       ),
       trailing: Checkbox(
-        value: task.status == 1,
+        value: widget.task.status == 1,
         onChanged: (value) {
-          onStatusUpdate(task.id, value == true ? 1 : 0);
+          widget.onStatusUpdate(widget.task.id, value == true ? 1 : 0);
         },
+        shape: CircleBorder(),
       ),
     );
   }

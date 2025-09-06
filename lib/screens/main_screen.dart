@@ -54,6 +54,7 @@ class _MainScreenState extends State<MainScreen> {
         duration: const Duration(milliseconds: 100),
         curve: Curves.ease,
       );
+      homeKey.currentState?.refreshTasks();
     });
   }
 

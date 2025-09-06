@@ -1,29 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/models/repetition.dart';
+import 'package:todo_app/models/task.dart';
 import 'package:todo_app/services/database_service.dart';
 import 'package:todo_app/utils/date_time_utils.dart';
 
-Future<dynamic> showAddTaskBox({
+Future<Task?> showEditTaskBox({
   required context,
   required DatabaseService databaseService,
-  required DateTime focusedDay,
+  required Task task,
 }) {
   DateTime firstDay = DateTime.utc(2000, 01, 01);
   DateTime lastDay = DateTime.utc(2999, 01, 01);
-  String? taskText;
-  return showDialog(
+
+  return showDialog<Task?>(
     context: context,
     builder: (_) {
-      DateTime selectedInitialDay = focusedDay;
-      TimeOfDay selectedTimeOfDay = TimeOfDay.now();
-      TimeOfDay selectedDuration = TimeOfDay(hour: 0, minute: 0);
-      Repetition? selectedRepetition;
-      bool allDay = true;
-      VoidCallback? chooseDayButton;
-      VoidCallback? chooseDurationButton;
+      DateTime selectedInitialDay = getDateTimeFromString(task.initialDate);
+      TimeOfDay selectedTimeOfDay = getTimeOfDayFromString(task.initialTime);
+      TimeOfDay selectedDuration = getTimeOfDayFromString(task.duration);
+      Repetition selectedRepetition = task.repetition;
+      bool allDay =
+          selectedDuration.isAtSameTimeAs(TimeOfDay(hour: 0, minute: 0));
+
       final TextEditingController taskTextController = TextEditingController();
+      taskTextController.text = task.content;
 
       return StatefulBuilder(builder: (context, setStateDialog) {
+        VoidCallback? chooseDayButton = allDay
+            ? () async {
+                TimeOfDay? pickedTimeOfDay = await showTimePicker(
+                  context: context,
+                  initialTime: selectedTimeOfDay,
+                );
+                setStateDialog(() =>
+                    selectedTimeOfDay = pickedTimeOfDay ?? TimeOfDay.now());
+              }
+            : null;
+        VoidCallback? chooseDurationButton = allDay
+            ? () async {
+                TimeOfDay? pickedDuration = await showTimePicker(
+                  context: context,
+                  initialTime: selectedDuration,
+                );
+                setStateDialog(
+                  () {
+                    selectedDuration = pickedDuration ?? selectedDuration;
+                  },
+                );
+              }
+            : null;
         return AlertDialog(
           backgroundColor: Colors.grey.shade300,
           title: Center(child: Text('Add Task')),
@@ -55,10 +80,11 @@ Future<dynamic> showAddTaskBox({
                               context: context,
                               firstDate: firstDay,
                               lastDate: lastDay,
-                              initialDate: focusedDay,
+                              initialDate: selectedInitialDay,
                             );
                             setStateDialog(() {
-                              selectedInitialDay = pickedDate ?? focusedDay;
+                              selectedInitialDay =
+                                  pickedDate ?? selectedInitialDay;
                             });
                           },
                           child: Text(
@@ -72,43 +98,38 @@ Future<dynamic> showAddTaskBox({
                 Row(
                   children: [
                     Text("All day"),
-                    Transform.scale(
-                      scale: 0.7,
-                      child: Switch(
-                        value: allDay,
-                        onChanged: (value) {
-                          setStateDialog(() {
-                            allDay = value;
-                            if (!allDay) {
-                              chooseDayButton = () async {
-                                TimeOfDay? pickedTimeOfDay =
-                                    await showTimePicker(
-                                  context: context,
-                                  initialTime: selectedTimeOfDay,
-                                );
-                                setStateDialog(() => selectedTimeOfDay =
-                                    pickedTimeOfDay ?? TimeOfDay.now());
-                              };
-                              chooseDurationButton = () async {
-                                TimeOfDay? pickedDuration =
-                                    await showTimePicker(
-                                  context: context,
-                                  initialTime: selectedDuration,
-                                );
-                                setStateDialog(
-                                  () {
-                                    selectedDuration =
-                                        pickedDuration ?? selectedDuration;
-                                  },
-                                );
-                              };
-                            } else {
-                              chooseDayButton = null;
-                              chooseDurationButton = null;
-                            }
-                          });
-                        },
-                      ),
+                    Checkbox(
+                      value: allDay,
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          allDay = value!;
+                          if (!allDay) {
+                            chooseDayButton = () async {
+                              TimeOfDay? pickedTimeOfDay = await showTimePicker(
+                                context: context,
+                                initialTime: selectedTimeOfDay,
+                              );
+                              setStateDialog(() => selectedTimeOfDay =
+                                  pickedTimeOfDay ?? TimeOfDay.now());
+                            };
+                            chooseDurationButton = () async {
+                              TimeOfDay? pickedDuration = await showTimePicker(
+                                context: context,
+                                initialTime: selectedDuration,
+                              );
+                              setStateDialog(
+                                () {
+                                  selectedDuration =
+                                      pickedDuration ?? selectedDuration;
+                                },
+                              );
+                            };
+                          } else {
+                            chooseDayButton = null;
+                            chooseDurationButton = null;
+                          }
+                        });
+                      },
                     ),
                     OutlinedButton(
                       onPressed: chooseDayButton,
@@ -151,9 +172,6 @@ Future<dynamic> showAddTaskBox({
                             return Text('No data');
                           }
 
-                          selectedRepetition =
-                              selectedRepetition ?? snapshot.data!.first;
-
                           return SizedBox(
                             width: double.infinity,
                             // padding: EdgeInsets.symmetric(horizontal: 12),
@@ -171,7 +189,7 @@ Future<dynamic> showAddTaskBox({
                                 }).toList(),
                                 onChanged: (Repetition? newValue) {
                                   setStateDialog(() {
-                                    selectedRepetition = newValue;
+                                    selectedRepetition = newValue!;
                                   });
                                 },
                               ),
@@ -185,26 +203,23 @@ Future<dynamic> showAddTaskBox({
                 MaterialButton(
                   color: Theme.of(context).colorScheme.primary,
                   onPressed: () {
-                    taskText = taskTextController.text;
+                    task.content = taskTextController.text;
+                    task.initialDate = getDateText(selectedInitialDay);
+                    task.initialTime = selectedTimeOfDay.format(context);
+                    task.duration = selectedDuration.format(context);
+                    task.repetition = selectedRepetition;
 
-                    if (taskText == null || taskText == '') return;
+                    if (task.content == '') return;
 
-                    databaseService.addTask(
-                      content: taskText!,
-                      initialDate: getDateText(selectedInitialDay),
-                      initialTime: selectedTimeOfDay.format(context),
-                      duration: selectedDuration.format(context),
-                      repetitionId: selectedRepetition!.id,
+                    databaseService.updateTask(
+                      task,
                     );
-                    setStateDialog(() {
-                      taskText = null;
-                    });
-                    Navigator.pop(context);
+                    Navigator.pop(context, task);
                   },
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20)),
                   child: Text(
-                    'Add',
+                    'Update',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,

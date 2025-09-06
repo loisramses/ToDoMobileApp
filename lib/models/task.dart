@@ -11,7 +11,7 @@ class Task {
     required this.status,
     required this.initialDate,
     required this.initialTime,
-    required this.duration,
+    required this.duration, // if duration is 00:00, means its an all day event
     required this.repetition,
   });
 
@@ -23,7 +23,7 @@ class Task {
       'initialDate': initialDate,
       'initialTime': initialTime,
       'duration': duration,
-      'repetition': repetition.id,
+      'repetitionId': repetition.id,
     };
   }
 
