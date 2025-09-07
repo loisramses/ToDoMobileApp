@@ -22,7 +22,7 @@ Next steps:
 - core functional updates:
     - notifications
     - settings tab
-        - set different languages (for last)
+        - set different languages (save for last)
         - themes
         - font size
         - etc.

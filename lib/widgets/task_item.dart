@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 
 import 'package:todo_app/models/task.dart';
 import 'package:todo_app/services/database_service.dart';
@@ -57,14 +56,13 @@ class _TaskItemState extends State<TaskItem> {
         );
       },
       title: Text(
-        "${widget.task.content} ${widget.task.repetition.name}",
+        "${_task.content} ${_task.repetition.name}",
         style: TextStyle(
-          decoration:
-              widget.task.status == 1 ? TextDecoration.lineThrough : null,
+          decoration: _task.status == 1 ? TextDecoration.lineThrough : null,
         ),
       ),
       trailing: Checkbox(
-        value: widget.task.status == 1,
+        value: _task.status == 1,
         onChanged: (value) {
           widget.onStatusUpdate(widget.task.id, value == true ? 1 : 0);
         },

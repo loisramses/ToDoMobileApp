@@ -98,38 +98,43 @@ Future<Task?> showEditTaskBox({
                 Row(
                   children: [
                     Text("All day"),
-                    Checkbox(
-                      value: allDay,
-                      onChanged: (value) {
-                        setStateDialog(() {
-                          allDay = value!;
-                          if (!allDay) {
-                            chooseDayButton = () async {
-                              TimeOfDay? pickedTimeOfDay = await showTimePicker(
-                                context: context,
-                                initialTime: selectedTimeOfDay,
-                              );
-                              setStateDialog(() => selectedTimeOfDay =
-                                  pickedTimeOfDay ?? TimeOfDay.now());
-                            };
-                            chooseDurationButton = () async {
-                              TimeOfDay? pickedDuration = await showTimePicker(
-                                context: context,
-                                initialTime: selectedDuration,
-                              );
-                              setStateDialog(
-                                () {
-                                  selectedDuration =
-                                      pickedDuration ?? selectedDuration;
-                                },
-                              );
-                            };
-                          } else {
-                            chooseDayButton = null;
-                            chooseDurationButton = null;
-                          }
-                        });
-                      },
+                    Transform.scale(
+                      scale: 0.7,
+                      child: Switch(
+                        value: allDay,
+                        onChanged: (value) {
+                          setStateDialog(() {
+                            allDay = value;
+                            if (!allDay) {
+                              chooseDayButton = () async {
+                                TimeOfDay? pickedTimeOfDay =
+                                    await showTimePicker(
+                                  context: context,
+                                  initialTime: selectedTimeOfDay,
+                                );
+                                setStateDialog(() => selectedTimeOfDay =
+                                    pickedTimeOfDay ?? TimeOfDay.now());
+                              };
+                              chooseDurationButton = () async {
+                                TimeOfDay? pickedDuration =
+                                    await showTimePicker(
+                                  context: context,
+                                  initialTime: selectedDuration,
+                                );
+                                setStateDialog(
+                                  () {
+                                    selectedDuration =
+                                        pickedDuration ?? selectedDuration;
+                                  },
+                                );
+                              };
+                            } else {
+                              chooseDayButton = null;
+                              chooseDurationButton = null;
+                            }
+                          });
+                        },
+                      ),
                     ),
                     OutlinedButton(
                       onPressed: chooseDayButton,
